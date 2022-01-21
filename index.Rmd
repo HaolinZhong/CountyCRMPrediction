@@ -1,0 +1,16 @@
+---
+title: "1990 - 1992 Census County Crime Rate Prediction"
+author: "Author: Haolin Zhong"
+---
+
+&nbsp;
+
+In this project, based on the County Demographic Information (CDI) dataset,
+
+  - We performed multiple linear regression and built a model predicting county-level crime rate with a county's total population, young adult proportion, poverty rate, per capita income and geographical region and hospital bed density as predictors. 
+  
+  - Our model has achieved a fairly accurate prediction with an RMSE of 1.16, an $R^2$ of 0.53 and an MAE of 0.90 in 10-fold cross-validation. 
+  
+  
+
+

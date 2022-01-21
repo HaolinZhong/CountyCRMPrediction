@@ -1,0 +1,323 @@
+---
+title: "Modeling"
+---
+
+We performed Multivariate Linear Regression to build our model, and adopted a strategy
+combining criterion-based approach and partial-F test to determine the optimal 
+model. Model diagnostics was further implemented to ensure theoretical assumptions of
+MLR have been satisfied.
+
+&nbsp;
+
+# Dependencies
+
+```{r, message=FALSE, warning=FALSE, class.source = 'fold-show'}
+library(tidyverse)
+library(leaps)
+library(patchwork)
+library(MASS)
+library(caret)
+```
+
+
+```{r, include=FALSE}
+path = "./data/cdi.csv"
+cdi = read_csv(path)
+
+cdi = 
+  cdi %>% 
+  mutate(
+    cty = map2_chr(as.character(state), cty, ~str_glue(.x, .y, .sep = "_"))
+  )
+
+cdi = cdi %>% 
+  mutate(
+    id = as.factor(id),
+    state = as.factor(state),
+    region = as.factor(region),
+    region = fct_recode(region,
+      `Northeast` = "1",
+      `North central` = "2",
+      `South` = "3",
+      `West` = "4"
+    )
+  ) %>% 
+  mutate(
+    crm_1000 = (crimes / pop) * 1000,
+    docs_1000 = (docs / pop) * 1000,
+    beds_1000 = (beds / pop) * 1000
+  ) %>% 
+  mutate(
+    pop = pop / 1000,
+    pcincome = pcincome / 1000
+    ) %>% 
+  # for regression analysis
+  dplyr::select(-id, -cty, -crimes) %>% 
+  dplyr::select(-totalinc, -docs, -beds) %>% 
+  dplyr::select(-state)
+```
+
+
+&nbsp;
+
+
+# Feature Selection
+
+&nbsp;
+
+## Main Effect
+
+#### Criterion-based Variable Selection
+
+We used the function `regsubsets` to perform feature selection. This function
+automatically searches through all possible models, and returns the best model
+under different numbers of parameters. The figure below displayed $C_p$ value, 
+Adjusted-$R^2$ and BIC of models with different input features, which suggests
+that the model with 9 or 10 parameters should be the optimal one.
+
+```{r}
+
+b = regsubsets(crm_1000 ~ ., data = cdi, nbest = 1, nvmax = 14, method = "exhaustive")
+
+
+rs = summary(b)
+
+
+myfun = function(x){
+  x
+}
+
+rs_df = tibble(n_param = 2:15,
+       `Cp` = round(rs$cp, 2),
+       `BIC` = round(rs$bic, 2),
+       `Adj_R^2` = round(rs$adjr2, 4))
+
+cp_plot = 
+  rs_df %>% 
+  ggplot(aes(n_param, y = Cp)) + 
+  geom_point() +
+  stat_function(fun = myfun, geom = "line", alpha = .5, color = "darkred") +
+  scale_x_continuous(breaks = seq(2, 14, 1)) +
+  xlab("Number of parameters")+
+  ylab(expression(C[p])) +
+  theme_bw() +
+  theme( 
+    panel.grid.major.y = element_blank(),
+    panel.grid.minor.y = element_blank(),
+    panel.grid.major.x = element_blank(),
+    panel.grid.minor.x = element_blank()
+    )
+
+adjr2_plot = 
+  rs_df %>% 
+  ggplot(aes(n_param, y = `Adj_R^2`)) + 
+  geom_point() +
+  scale_x_continuous(breaks = seq(2, 14, 1)) +
+  scale_y_log10() +
+  xlab("Number of parameters")+
+  ylab(expression(paste("Adjusted ", R^2))) +
+  theme_bw() +
+  theme( 
+    panel.grid.major.y = element_blank(),
+    panel.grid.minor.y = element_blank(),
+    panel.grid.major.x = element_blank(),
+    panel.grid.minor.x = element_blank()
+    )
+
+bic_plot = 
+  rs_df %>% 
+  ggplot(aes(n_param, y = BIC)) + 
+  geom_point() +
+  scale_x_continuous(breaks = seq(2, 14, 1)) +
+  xlab("Number of parameters")+
+  ylab("BIC")+
+  theme_bw() +
+  theme( 
+    panel.grid.major.y = element_blank(),
+    panel.grid.minor.y = element_blank(),
+    panel.grid.major.x = element_blank(),
+    panel.grid.minor.x = element_blank()
+    )
+
+(cp_plot | adjr2_plot) / ( bic_plot | gridExtra::tableGrob(rs_df[7:12, ], theme = gridExtra::ttheme_default(10))) +  
+  plot_annotation(tag_levels = 'A') +
+  plot_layout(widths = 1)
+
+```
+
+- Features used in the 9-parameter model are:
+
+```{r}
+rs$which[8,rs$which[8,]] %>% names()
+```
+
+- Features used in the 10-parameter model are:
+
+```{r}
+rs$which[9,rs$which[9,]] %>% names()
+```
+
+&nbsp;
+
+#### Partial-F Test for Nested Models
+
+To determine which model we should choose, we perform partial-F test for nested models.
+
+- H0: The coefficient of variable `bagrad` is 0. ($\beta_{bagrad} = 0$)
+- H1: The coeeficient is not 0.
+
+```{r}
+fit_9 = lm(crm_1000 ~ pop + pop18 + poverty + pcincome + region + beds_1000, data = cdi)
+
+fit_10 = lm(crm_1000 ~ pop + pop18 + poverty + pcincome + region + beds_1000 + bagrad, data = cdi)
+
+anova(fit_9, fit_10) %>% 
+  broom::tidy()
+```
+
+With a significance level of 0.05, because p > 0.05, we fail to reject the null hypothesis and conclude that the regression coefficient for variable `bagrad` is 0.
+Therefore, we choose the 9-parameter model for further analysis.
+
+&nbsp;
+
+
+## Interaction Term
+
+#### Poverty Population
+
+We believe that the interaction term of `pop` and `poverty` can serve as a proper predictor because it represents people live in poverty. We use partial-F test to
+determine whether this term should be included in the model.
+
+- H0: $\beta_{pop \cdot poverty} = 0$
+- H1: $\beta_{pop \cdot poverty} \not= 0$
+
+```{r}
+fit_main = lm(crm_1000 ~ pop + pop18 + poverty + pcincome + region + beds_1000, data = cdi)
+fit_inter = lm(crm_1000 ~ pop + pop18 + poverty + pcincome + region + beds_1000 + pop*poverty, data = cdi)
+anova(fit_main, fit_inter) %>% 
+  broom::tidy()
+```
+
+With a significance level of 0.05, because p < 0.05, we reject the null hypothesis and conclude that the regression coefficient for variable `pop` * `poverty` is not 0. Therefore, we include this term in following analysis.
+
+&nbsp;
+
+#### Young Adulthood Population
+
+We believe that the interaction term of `pop` and `pop18` can also serve as a proper predictor because it represents people aged between 18-34, when they are young and strong. We also used partial-F test to determine whether this term should be included in the model.
+
+```{r}
+fit_inter = lm(crm_1000 ~ pop + pop18 + poverty + pcincome + region + beds_1000 + pop*poverty, data = cdi)
+fit_inter2 = lm(crm_1000 ~ pop + pop18 + poverty + pcincome + region + beds_1000 + pop*poverty + pop*pop18, data = cdi)
+anova(fit_inter, fit_inter2) %>% 
+  broom::tidy()
+```
+
+With a significance level of 0.05, because p < 0.05, we reject the null hypothesis and conclude that the regression coefficient for variable `pop` * `pop18` is not 0. Therefore, we include this term in following analysis.
+
+&nbsp;
+
+
+# Model Diagnostic
+
+&nbsp;
+
+## Box-cox Transformation
+
+We use the function `MASS::boxcox()` to determine whether a boxcox transformation is applicable.
+
+```{r}
+boxcox(fit_inter2)
+```
+
+The figure showed that the $\lambda$ value is approximately 0.5. Therefore, we created another variable `crm_1000_rt` which equals to the square root of `crm_1000`. We refit our model using this variable as the outcome.
+
+```{r}
+cdi_rt = cdi %>% mutate(crm_1000_rt = crm_1000^0.5) %>% dplyr::select(-crm_1000)
+
+fit_inter2_rt = lm(crm_1000_rt ~ pop + pop18 + poverty + pcincome + region + beds_1000 + pop*poverty + pop*pop18, data = cdi_rt)
+```
+
+&nbsp;
+
+## Check Outliers & Influential Point
+
+We observed that the first and the sixth row of the data are outliers / influential points (their cook distances > 1), thus we removed these rows and refitted the model.
+
+```{r, fig.width=8, fig.height=4}
+par(mfrow = c(1,2))
+plot(fit_inter2_rt, which = 4)
+plot(fit_inter2_rt, which = 5)
+
+cdi_rt_out = cdi_rt[-c(1, 6),]
+fit_inter2_rt_out = lm(crm_1000_rt ~ pop + pop18 + poverty + pcincome + region + beds_1000 + pop*poverty + pop*pop18, data = cdi_rt_out)
+```
+
+&nbsp;
+
+## Collinearity Check
+
+The VIF for each variable is lower than 5, suggesting low collinearity among variables.
+
+```{r}
+performance::check_collinearity(fit_inter2_rt_out)
+```
+
+&nbsp;
+
+## Check Model Assumptions
+
+After completing the diagnostic process, we check assumptions of MLR, and found the model has basically satisfied all assumptions.
+
+```{r, fig.height = 3, fig.width = 12}
+par(mfrow=c(1,4))
+plot(fit_inter2_rt_out)
+```
+
+&nbsp;
+
+## Comparison: Before / After Diagnostics
+
+Here we compared model metrics before / after we performed the diagnostics. The results suggest that the diagnostic process has significantly improved the model.
+
+```{r}
+bind_rows(broom::glance(fit_inter2), broom::glance(fit_inter2_rt_out), .id = "model") %>% 
+  mutate(model = if_else(model == 1, "before diagnostic", "after diagnostic")) %>% 
+  kableExtra::kbl() %>% 
+  kableExtra::kable_styling(font_size = 12)
+```
+
+
+&nbsp;
+
+# Model Performance & Summary
+
+Our final model has achieved an RMSE of 1.16, an $R^2$ of 0.53, and an MAR of 0.90 in 10-fold cross validation.
+
+```{r}
+set.seed(1)
+
+# Use 10-fold validation
+train = trainControl(method = "cv", number = 10)
+
+
+model_caret = train(crm_1000_rt ~ pop + pop18 + poverty + pcincome + region + beds_1000 + pop*poverty + pop*pop18,
+                   data = cdi_rt_out,
+                   trControl = train,
+                   method = 'lm',
+                   na.action = na.pass)
+
+print(model_caret)
+```
+
+
+Here are all the coefficients and terms of our final model:
+
+```{r}
+broom::tidy(fit_inter2_rt_out) %>% 
+  kableExtra::kbl() %>% 
+  kableExtra::kable_styling(font_size = 12)
+```
+
+
+

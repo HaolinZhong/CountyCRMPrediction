@@ -1,0 +1,144 @@
+---
+title: "Exploratory Data Analysis"
+---
+
+The goal of EDA is to explore the relationship among variables and remove features improper for constructing the regression model.
+
+&nbsp;
+
+# Dependencies
+
+```{r, message=FALSE, warning=FALSE, class.source = 'fold-show'}
+library(tidyverse)
+library(corrplot)
+```
+
+```{r, include=FALSE}
+path = "./data/cdi.csv"
+cdi = read_csv(path)
+
+cdi = 
+  cdi %>% 
+  mutate(
+    cty = map2_chr(as.character(state), cty, ~str_glue(.x, .y, .sep = "_"))
+  )
+
+cdi = cdi %>% 
+  mutate(
+    id = as.factor(id),
+    state = as.factor(state),
+    region = as.factor(region),
+    region = fct_recode(region,
+      `Northeast` = "1",
+      `North central` = "2",
+      `South` = "3",
+      `West` = "4"
+    )
+  ) %>% 
+  mutate(
+    crm_1000 = (crimes / pop) * 1000,
+    docs_1000 = (docs / pop) * 1000,
+    beds_1000 = (beds / pop) * 1000
+  ) %>% 
+  mutate(
+    pop = pop / 1000,
+    pcincome = pcincome / 1000
+    ) %>% 
+  # for regression analysis
+  dplyr::select(-id, -cty, -crimes)
+```
+
+&nbsp;
+
+# Distribution of All Variables
+
+The distributions of some variables follow a skewed normal pattern, while the others follow a Poisson pattern.
+
+```{r, fig.height=8}
+cdi %>%
+  keep(is.numeric) %>% 
+  gather() %>% 
+  ggplot(aes(value)) +
+    facet_wrap(~ key, scales = "free", ncol = 3) +
+    geom_histogram()
+```
+
+&nbsp;
+
+# Pairwise Relationship between Variables
+
+Through inspecting the pairwise relationship among variables, we observed that some variables (`pop`, `totalinc`, `docs`, `beds`) has very large correlation coefficient. Thus, we remove these variables (except `pop`) to avoid introducing collinearity in further regression. 
+
+&nbsp;
+
+## Pairwise Relationship
+
+```{r, fig.height=6}
+pairs(cdi %>% dplyr::select(pop18, docs_1000, beds_1000, crm_1000, poverty, pcincome, hsgrad, bagrad, pop65, unemp, area, pop, totalinc, docs, beds), 
+          lower.panel = panel.smooth, 
+          upper.panel = NULL,
+      font.labels = 3,
+      cex.labels = 1,
+      gap = 0)
+```
+
+&nbsp;
+
+## Pairwise Correlation Coefficient:
+
+```{r, fig.height=6}
+col = colorRampPalette(c("#BB4444", "#EE9988", "#FFFFFF", "#77AADD", "#4477AA"))
+
+
+corrplot(cor(keep(cdi, is.numeric)), 
+         type = "lower", 
+         method = "shade", 
+         shade.col = NA, 
+         tl.col = "black", 
+         tl.srt = 45,
+         col = col(200), 
+         addCoef.col = "black", 
+         cl.pos = "n",  
+         order = "hclust", 
+         number.cex = .8,
+         number.font = 1, 
+         diag = FALSE, 
+         tl.pos = "ld", 
+         tl.cex = .8)
+```
+
+
+&nbsp;
+
+# Crime Rate Among State
+
+We further observed the trends between crime rate and geographical locations/regions, and 
+identified `region` instead of `state` as a proper predictor. The figure below displayed
+a clear trend between county region and crime rate, suggest that `region` is a proper predictor.
+Since `region` and `state` are both variables depicting geographical information and `state` has
+too many levels as a categorical variable, we remove state.
+
+```{r}
+cdi %>% 
+  ggplot(aes(x = reorder(state, -crm_1000), y = crm_1000, color = region)) +
+  geom_point(alpha = .8) + 
+  theme_classic() +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5)) +
+  theme(
+    panel.grid.major.y = element_blank(),
+    panel.grid.minor.y = element_blank(),
+    panel.grid.major.x = element_blank(),
+    panel.grid.minor.x = element_blank()
+    #axis.text = element_text(size=12),
+    #axis.title = element_text(size=15),
+    #legend.text = element_text(size=12),
+    #legend.title = element_text(size=15)
+  ) + 
+  scale_y_sqrt() +
+  labs(y = "crime rate", x = "state")
+```
+
+
+
+
+
