@@ -1,11 +1,15 @@
 ---
 title: "1990 - 1992 Census County Crime Rate Prediction"
 author: "Author: Haolin Zhong"
+output:
+  html_document:
+    toc: False
+    code_folding: null
 ---
 
 &nbsp;
 
-In this project, based on the County Demographic Information (CDI) dataset,
+In this project, based on the [County Demographic Information (CDI) dataset](https://github.com/HaolinZhong/CountyCRMPrediction/blob/main/data/cdi.csv),
 
   - We performed multiple linear regression and built a model predicting county-level crime rate with a county's total population, young adult proportion, poverty rate, per capita income and geographical region and hospital bed density as predictors. 
   

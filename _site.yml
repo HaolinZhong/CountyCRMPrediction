@@ -8,13 +8,13 @@ navbar:
     - text: "EDA"
       href: EDA.html
     - text: "Modeling"
-      href: modeling.html
+      href: Modeling.html
     - text: "Prediction Tool"
-      href: shiny.html
+      href: https://hzhong.shinyapps.io/shiny/
     - icon: fa-envelope fa-lg
       href: mailto:<hz2771@columbia.edu>
     - icon: fa-github fa-lg
-      href: http://github.com/HaolinZhong/
+      href: https://github.com/HaolinZhong/CountyCRMPrediction
     - icon: fa-linkedin fa-lg
       href: https://www.linkedin.com/in/haolin-zhong-266307203/
 output:

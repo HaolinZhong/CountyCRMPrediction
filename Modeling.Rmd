@@ -48,8 +48,7 @@ cdi = cdi %>%
     beds_1000 = (beds / pop) * 1000
   ) %>% 
   mutate(
-    pop = pop / 1000,
-    pcincome = pcincome / 1000
+    pop = pop / 1000
     ) %>% 
   # for regression analysis
   dplyr::select(-id, -cty, -crimes) %>% 
