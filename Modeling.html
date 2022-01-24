@@ -498,8 +498,8 @@ anova(fit_9, fit_10) %&gt;%
 <pre><code>## # A tibble: 2 x 6
 ##   res.df     rss    df sumsq statistic p.value
 ##    &lt;dbl&gt;   &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;     &lt;dbl&gt;   &lt;dbl&gt;
-## 1    431 173385.    NA   NA      NA     NA    
-## 2    430 172379.     1 1007.      2.51   0.114</code></pre>
+## 1    343 149497.    NA   NA      NA    NA     
+## 2    342 147857.     1 1641.      3.80  0.0522</code></pre>
 <p>With a significance level of 0.05, because p &gt; 0.05, we fail to reject the null hypothesis and conclude that the regression coefficient for variable <code>bagrad</code> is 0. Therefore, we choose the 9-parameter model for further analysis.</p>
 <p> </p>
 </div>
@@ -520,8 +520,8 @@ anova(fit_main, fit_inter) %&gt;%
 <pre><code>## # A tibble: 2 x 6
 ##   res.df     rss    df  sumsq statistic       p.value
 ##    &lt;dbl&gt;   &lt;dbl&gt; &lt;dbl&gt;  &lt;dbl&gt;     &lt;dbl&gt;         &lt;dbl&gt;
-## 1    431 173385.    NA    NA       NA   NA           
-## 2    430 161278.     1 12108.      32.3  0.0000000246</code></pre>
+## 1    343 149497.    NA    NA       NA   NA           
+## 2    342 136436.     1 13062.      32.7  0.0000000230</code></pre>
 <p>With a significance level of 0.05, because p &lt; 0.05, we reject the null hypothesis and conclude that the regression coefficient for variable <code>pop</code> * <code>poverty</code> is not 0. Therefore, we include this term in following analysis.</p>
 <p> </p>
 </div>
@@ -533,10 +533,10 @@ fit_inter2 = lm(crm_1000 ~ pop + pop18 + poverty + pcincome + region + beds_1000
 anova(fit_inter, fit_inter2) %&gt;% 
   broom::tidy()</code></pre>
 <pre><code>## # A tibble: 2 x 6
-##   res.df     rss    df sumsq statistic   p.value
-##    &lt;dbl&gt;   &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;     &lt;dbl&gt;     &lt;dbl&gt;
-## 1    430 161278.    NA   NA       NA   NA       
-## 2    429 156563.     1 4715.      12.9  0.000363</code></pre>
+##   res.df     rss    df sumsq statistic    p.value
+##    &lt;dbl&gt;   &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;     &lt;dbl&gt;      &lt;dbl&gt;
+## 1    342 136436.    NA   NA       NA   NA        
+## 2    341 130356.     1 6080.      15.9  0.0000815</code></pre>
 <p>With a significance level of 0.05, because p &lt; 0.05, we reject the null hypothesis and conclude that the regression coefficient for variable <code>pop</code> * <code>pop18</code> is not 0. Therefore, we include this term in following analysis.</p>
 <p> </p>
 </div>
@@ -558,12 +558,12 @@ fit_inter2_rt = lm(crm_1000_rt ~ pop + pop18 + poverty + pcincome + region + bed
 </div>
 <div id="check-outliers-influential-point" class="section level2">
 <h2>Check Outliers &amp; Influential Point</h2>
-<p>We observed that the first and the sixth row of the data are outliers / influential points (their cook distances &gt; 1), thus we removed these rows and refitted the model.</p>
+<p>We observed that the first and the fifth row of the data are outliers / influential points (their cook distances &gt; 1), thus we removed these rows and refitted the model.</p>
 <pre class="r"><code>par(mfrow = c(1,2))
 plot(fit_inter2_rt, which = 4)
 plot(fit_inter2_rt, which = 5)</code></pre>
 <p><img src="Modeling_files/figure-html/unnamed-chunk-11-1.png" width="768" /></p>
-<pre class="r"><code>cdi_rt_out = cdi_rt[-c(1, 6),]
+<pre class="r"><code>cdi_rt_out = cdi_rt[-c(1, 5),]
 fit_inter2_rt_out = lm(crm_1000_rt ~ pop + pop18 + poverty + pcincome + region + beds_1000 + pop*poverty + pop*pop18, data = cdi_rt_out)</code></pre>
 <p> </p>
 </div>
@@ -576,14 +576,14 @@ fit_inter2_rt_out = lm(crm_1000_rt ~ pop + pop18 + poverty + pcincome + region +
 ## Low Correlation
 ## 
 ##         Term  VIF Increased SE Tolerance
-##          pop 2.37         1.54      0.42
-##        pop18 1.79         1.34      0.56
-##      poverty 1.38         1.17      0.73
-##     pcincome 1.03         1.01      0.97
-##       region 1.24         1.11      0.81
-##    beds_1000 1.27         1.12      0.79
-##  pop:poverty 1.12         1.06      0.89
-##    pop:pop18 1.55         1.25      0.64</code></pre>
+##          pop 2.21         1.49      0.45
+##        pop18 1.72         1.31      0.58
+##      poverty 1.36         1.16      0.74
+##     pcincome 1.04         1.02      0.97
+##       region 1.21         1.10      0.83
+##    beds_1000 1.27         1.13      0.79
+##  pop:poverty 1.11         1.05      0.90
+##    pop:pop18 1.50         1.23      0.67</code></pre>
 <p> </p>
 </div>
 <div id="check-model-assumptions" class="section level2">
@@ -651,16 +651,16 @@ nobs
 before diagnostic
 </td>
 <td style="text-align:right;">
-0.5224518
+0.5105540
 </td>
 <td style="text-align:right;">
-0.5113201
+0.4962007
 </td>
 <td style="text-align:right;">
-19.103614
+19.551854
 </td>
 <td style="text-align:right;">
-46.93386
+35.57060
 </td>
 <td style="text-align:right;">
 0
@@ -669,22 +669,22 @@ before diagnostic
 10
 </td>
 <td style="text-align:right;">
--1916.7091
+-1540.399
 </td>
 <td style="text-align:right;">
-3857.418
+3104.799
 </td>
 <td style="text-align:right;">
-3906.460
+3151.162
 </td>
 <td style="text-align:right;">
-156562.7157
+130355.7773
 </td>
 <td style="text-align:right;">
-429
+341
 </td>
 <td style="text-align:right;">
-440
+352
 </td>
 </tr>
 <tr>
@@ -692,16 +692,16 @@ before diagnostic
 after diagnostic
 </td>
 <td style="text-align:right;">
-0.5413228
+0.5326617
 </td>
 <td style="text-align:right;">
-0.5305810
+0.5188759
 </td>
 <td style="text-align:right;">
-1.147804
+1.146353
 </td>
 <td style="text-align:right;">
-50.39380
+38.63845
 </td>
 <td style="text-align:right;">
 0
@@ -710,22 +710,22 @@ after diagnostic
 10
 </td>
 <td style="text-align:right;">
--676.3036
+-538.845
 </td>
 <td style="text-align:right;">
-1376.607
+1101.690
 </td>
 <td style="text-align:right;">
-1425.594
+1147.985
 </td>
 <td style="text-align:right;">
-562.5533
+445.4881
 </td>
 <td style="text-align:right;">
-427
+339
 </td>
 <td style="text-align:right;">
-438
+350
 </td>
 </tr>
 </tbody>
@@ -735,7 +735,7 @@ after diagnostic
 </div>
 <div id="model-performance-summary" class="section level1">
 <h1>Model Performance &amp; Summary</h1>
-<p>Our final model has achieved an RMSE of 1.16, an <span class="math inline">\(R^2\)</span> of 0.53, and an MAR of 0.90 in 10-fold cross validation.</p>
+<p>In the training process, our final model has achieved an RMSE of 1.17, an <span class="math inline">\(R^2\)</span> of 0.52, and an MAE of 0.90 in 10-fold cross validation.</p>
 <pre class="r"><code>set.seed(1)
 
 # Use 10-fold validation
@@ -751,18 +751,26 @@ model_caret = train(crm_1000_rt ~ pop + pop18 + poverty + pcincome + region + be
 print(model_caret)</code></pre>
 <pre><code>## Linear Regression 
 ## 
-## 438 samples
+## 350 samples
 ##   6 predictor
 ## 
 ## No pre-processing
 ## Resampling: Cross-Validated (10 fold) 
-## Summary of sample sizes: 395, 394, 394, 394, 394, 394, ... 
+## Summary of sample sizes: 315, 315, 314, 314, 316, 315, ... 
 ## Resampling results:
 ## 
 ##   RMSE      Rsquared   MAE      
-##   1.164769  0.5289902  0.9037664
+##   1.168198  0.5171321  0.9023371
 ## 
 ## Tuning parameter &#39;intercept&#39; was held constant at a value of TRUE</code></pre>
+<p>On the test dataset, the model has achieved an RMSE of 1.17, an <span class="math inline">\(R^2\)</span> of 0.56, and an MAE of 0.90.</p>
+<pre class="r"><code>cdi_test[&quot;crm_1000_rt&quot;] = sqrt(cdi_test$crm_1000)
+
+pred = predict(model_caret, newdata = cdi_test)
+
+postResample(pred = pred, obs = cdi_test$crm_1000_rt)</code></pre>
+<pre><code>##      RMSE  Rsquared       MAE 
+## 1.1685965 0.5618821 0.8967401</code></pre>
 <p>Here are all the coefficients and terms of our final model:</p>
 <pre class="r"><code>broom::tidy(fit_inter2_rt_out) %&gt;% 
   kableExtra::kbl() %&gt;% 
@@ -793,16 +801,16 @@ p.value
 (Intercept)
 </td>
 <td style="text-align:right;">
-1.2800608
+1.4060316
 </td>
 <td style="text-align:right;">
-0.6807836
+0.7504853
 </td>
 <td style="text-align:right;">
-1.8802756
+1.8734965
 </td>
 <td style="text-align:right;">
-0.0607510
+0.0618600
 </td>
 </tr>
 <tr>
@@ -810,16 +818,16 @@ p.value
 pop
 </td>
 <td style="text-align:right;">
-0.0002360
+0.0013746
 </td>
 <td style="text-align:right;">
-0.0016336
+0.0017431
 </td>
 <td style="text-align:right;">
-0.1444712
+0.7885854
 </td>
 <td style="text-align:right;">
-0.8851965
+0.4309055
 </td>
 </tr>
 <tr>
@@ -827,16 +835,16 @@ pop
 pop18
 </td>
 <td style="text-align:right;">
-0.0547000
+0.0620350
 </td>
 <td style="text-align:right;">
-0.0180237
+0.0190200
 </td>
 <td style="text-align:right;">
-3.0348997
+3.2615656
 </td>
 <td style="text-align:right;">
-0.0025532
+0.0012206
 </td>
 </tr>
 <tr>
@@ -844,16 +852,16 @@ pop18
 poverty
 </td>
 <td style="text-align:right;">
-0.0966779
+0.0801476
 </td>
 <td style="text-align:right;">
-0.0206605
+0.0223894
 </td>
 <td style="text-align:right;">
-4.6793652
+3.5797046
 </td>
 <td style="text-align:right;">
-0.0000039
+0.0003942
 </td>
 </tr>
 <tr>
@@ -861,16 +869,16 @@ poverty
 pcincome
 </td>
 <td style="text-align:right;">
-0.0000807
+0.0000672
 </td>
 <td style="text-align:right;">
-0.0000199
+0.0000236
 </td>
 <td style="text-align:right;">
-4.0666353
+2.8498323
 </td>
 <td style="text-align:right;">
-0.0000568
+0.0046418
 </td>
 </tr>
 <tr>
@@ -878,16 +886,16 @@ pcincome
 regionNorth central
 </td>
 <td style="text-align:right;">
-0.7196618
+0.6995349
 </td>
 <td style="text-align:right;">
-0.1635616
+0.1824967
 </td>
 <td style="text-align:right;">
-4.3999427
+3.8331371
 </td>
 <td style="text-align:right;">
-0.0000137
+0.0001508
 </td>
 </tr>
 <tr>
@@ -895,13 +903,13 @@ regionNorth central
 regionSouth
 </td>
 <td style="text-align:right;">
-1.8544292
+1.8021457
 </td>
 <td style="text-align:right;">
-0.1584734
+0.1726048
 </td>
 <td style="text-align:right;">
-11.7018356
+10.4408793
 </td>
 <td style="text-align:right;">
 0.0000000
@@ -912,13 +920,13 @@ regionSouth
 regionWest
 </td>
 <td style="text-align:right;">
-1.6589930
+1.6810420
 </td>
 <td style="text-align:right;">
-0.1859582
+0.2102153
 </td>
 <td style="text-align:right;">
-8.9213222
+7.9967645
 </td>
 <td style="text-align:right;">
 0.0000000
@@ -929,13 +937,13 @@ regionWest
 beds_1000
 </td>
 <td style="text-align:right;">
-0.2135504
+0.2177828
 </td>
 <td style="text-align:right;">
-0.0322820
+0.0359982
 </td>
 <td style="text-align:right;">
-6.6151544
+6.0498320
 </td>
 <td style="text-align:right;">
 0.0000000
@@ -946,16 +954,16 @@ beds_1000
 <a href="pop:poverty" class="uri">pop:poverty</a>
 </td>
 <td style="text-align:right;">
-0.0000504
+0.0000581
 </td>
 <td style="text-align:right;">
-0.0000361
+0.0000387
 </td>
 <td style="text-align:right;">
-1.3944113
+1.4999109
 </td>
 <td style="text-align:right;">
-0.1639185
+0.1345682
 </td>
 </tr>
 <tr>
@@ -963,16 +971,16 @@ beds_1000
 <a href="pop:pop18" class="uri">pop:pop18</a>
 </td>
 <td style="text-align:right;">
-0.0000022
+-0.0000341
 </td>
 <td style="text-align:right;">
-0.0000521
+0.0000548
 </td>
 <td style="text-align:right;">
-0.0417807
+-0.6232944
 </td>
 <td style="text-align:right;">
-0.9666931
+0.5335102
 </td>
 </tr>
 </tbody>

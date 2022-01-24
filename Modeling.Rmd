@@ -54,6 +54,11 @@ cdi = cdi %>%
   dplyr::select(-id, -cty, -crimes) %>% 
   dplyr::select(-totalinc, -docs, -beds) %>% 
   dplyr::select(-state)
+
+set.seed(2022)
+train_index = createDataPartition(cdi$crm_1000, p = 0.8, list = FALSE)
+cdi_test = cdi[-train_index,]
+cdi = cdi[train_index, ]
 ```
 
 
@@ -241,14 +246,14 @@ fit_inter2_rt = lm(crm_1000_rt ~ pop + pop18 + poverty + pcincome + region + bed
 
 ## Check Outliers & Influential Point
 
-We observed that the first and the sixth row of the data are outliers / influential points (their cook distances > 1), thus we removed these rows and refitted the model.
+We observed that the first and the fifth row of the data are outliers / influential points (their cook distances > 1), thus we removed these rows and refitted the model.
 
 ```{r, fig.width=8, fig.height=4}
 par(mfrow = c(1,2))
 plot(fit_inter2_rt, which = 4)
 plot(fit_inter2_rt, which = 5)
 
-cdi_rt_out = cdi_rt[-c(1, 6),]
+cdi_rt_out = cdi_rt[-c(1, 5),]
 fit_inter2_rt_out = lm(crm_1000_rt ~ pop + pop18 + poverty + pcincome + region + beds_1000 + pop*poverty + pop*pop18, data = cdi_rt_out)
 ```
 
@@ -291,7 +296,7 @@ bind_rows(broom::glance(fit_inter2), broom::glance(fit_inter2_rt_out), .id = "mo
 
 # Model Performance & Summary
 
-Our final model has achieved an RMSE of 1.16, an $R^2$ of 0.53, and an MAR of 0.90 in 10-fold cross validation.
+In the training process, our final model has achieved an RMSE of 1.17, an $R^2$ of 0.52, and an MAE of 0.90 in 10-fold cross validation.
 
 ```{r}
 set.seed(1)
@@ -308,6 +313,19 @@ model_caret = train(crm_1000_rt ~ pop + pop18 + poverty + pcincome + region + be
 
 print(model_caret)
 ```
+
+
+
+On the test dataset, the model has achieved an RMSE of 1.17, an $R^2$ of 0.56, and an MAE of 0.90.
+
+```{r}
+cdi_test["crm_1000_rt"] = sqrt(cdi_test$crm_1000)
+
+pred = predict(model_caret, newdata = cdi_test)
+
+postResample(pred = pred, obs = cdi_test$crm_1000_rt)
+```
+
 
 
 Here are all the coefficients and terms of our final model:
